@@ -441,9 +441,9 @@ class BookSearchWidget(QtWidgets.QWidget):
             self.killTimer(self.timerId)
         self.timerId = self.startTimer(1000)
 
-    def timerEvent(self, ev):
+    def timerEvent(self, event):
         """The redisplay timer has been triggered, redisplay the model."""
-        self.killTimer(ev.timerId())
+        self.killTimer(event.timerId())
         self.timerId = None
         self.display()
 
@@ -454,7 +454,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.setWindowTitle("Library Administrator")
+        self.setWindowTitle(self.tr("Library Administrator"))
 
         # Instantiate the search widget. It won't be part of the UI yet, since
         # we still don't have one set up, but it will be a children of this
@@ -561,27 +561,27 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
 def main():
-    locale.setlocale(locale.LC_ALL, '')
+    locale.setlocale(locale.LC_ALL)
 
     name = "Leopoldo Mauro"
     mail = "lmauro@usb.ve"
-    home = "http://emp.usb.ve/lmauro"
+    home = "https://github.com/leomauro/LibraryAdmin"
 
-    #    aboutData = KAboutData("kbooksearch",
-    #                           "",
-    #                           ki18n("Book Search"),
-    #                           "1.00",
-    #                           ki18n("Search book database"),
-    #                           KAboutData.License_GPL_V3,
-    #                           ki18n("(C) 2010-2019 " + name),
-    #                           ki18n(""),
-    #                           home + "/kbooksearch",
-    #                           mail)
-    #    aboutData.addAuthor(ki18n(name), ki18n("Author"), mail, home)
-    #    aboutData.setProgramIconName(APP_ICON)
-    #
-    #    KCmdLineArgs.init(sys.argv, aboutData)
-    #
+#    aboutData = KAboutData("kbooksearch",
+#                           "",
+#                           ki18n("Book Search"),
+#                           "1.00",
+#                           ki18n("Search book database"),
+#                           KAboutData.License_GPL_V3,
+#                           ki18n("(C) 2010-2019 " + name),
+#                           ki18n(""),
+#                           home + "/kbooksearch",
+#                           mail)
+#    aboutData.addAuthor(ki18n(name), ki18n("Author"), mail, home)
+#    aboutData.setProgramIconName(APP_ICON)
+#
+#    KCmdLineArgs.init(sys.argv, aboutData)
+
     app = QtWidgets.QApplication(sys.argv)
     win = MainWindow()
     win.show()
