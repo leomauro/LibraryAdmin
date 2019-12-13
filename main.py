@@ -48,8 +48,8 @@ class BookView(QtWidgets.QTreeView):
         self.setSortingEnabled(True)
         self.setMouseTracking(True)
 
-        # self.setDragDropMode(QtWidgets.QTreeView.DragDrop)
-        # self.setAcceptDrops(True)
+        self.setDragDropMode(QtWidgets.QTreeView.DragDrop)
+        self.setAcceptDrops(True)
         self.setDragEnabled(True)
         self.setAcceptDrops(False)
         self.dragStart = QtCore.QPoint()
