@@ -10,7 +10,7 @@ from datetime import datetime
 from PyQt5 import QtCore
 from PyQt5 import QtGui
 from PyQt5 import QtWidgets
-from PyQt5.QtCore import Qt, QCoreApplication
+from PyQt5.QtCore import Qt
 
 import fmt
 from database import Database
@@ -163,7 +163,7 @@ class BookSearchWidget(QtWidgets.QWidget):
 
         self.useWords = QtWidgets.QRadioButton(self.tr("&Words"))
         self.useWords.clicked.connect(self.timer)
-        self.useWords.setEnabled(False)                 # For the time being
+        self.useWords.setEnabled(False)  # For the time being
         self.syntaxGroup.addButton(self.useWords,
                                    BookFilterProxyModel.SyntaxWords)
 
@@ -281,12 +281,12 @@ class BookSearchWidget(QtWidgets.QWidget):
         # @TODO
         reg_exp = QtCore.QRegExp(search_text,
                                  Qt.CaseInsensitive
-                                    if ignore_case else
+                                 if ignore_case else
                                  Qt.CaseSensitive,
                                  QtCore.QRegExp.RegExp
-                                    if syntax == BookFilterProxyModel.SyntaxRE else
+                                 if syntax == BookFilterProxyModel.SyntaxRE else
                                  QtCore.QRegExp.FixedString
-                                )
+                                 )
         self.proxyModel.setFilterRegExp(reg_exp)
 
         # We're done!
