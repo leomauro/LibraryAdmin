@@ -561,7 +561,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
 def main():
-    locale.setlocale(locale.LC_ALL)
+    locale.setlocale(locale.LC_ALL, '')
 
     name = "Leopoldo Mauro"
     mail = "lmauro@usb.ve"
