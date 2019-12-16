@@ -54,7 +54,7 @@ class BookRepo:
         """
 
         dirpath = os.path.join(self.db_dir, directory)
-        print("    Scanning", dirpath)
+        print(f"    Scanning {dirpath}")
         if directory not in self.count:
             self.count[directory] = 0
 
@@ -68,7 +68,7 @@ class BookRepo:
                     continue
                 if not direntry.is_file():
                     continue
-    
+
                 # Determine the file type and encoding, and using that split
                 # the filename into a file part and an "extension".
                 filename = direntry.name
@@ -83,7 +83,7 @@ class BookRepo:
                            filename = filename[:-len(ext)]
                            filetype = ext[1:]
                            break;
-    
+
                 self.count[directory] += 1
                 yield FileItem(dir=directory,
                                file=filename,
@@ -101,7 +101,7 @@ class BookRepo:
 
         # There's something weird in the neighborhood...
         except OSError as ex:
-            print("{}: {}".format(ex.filename, ex.strerror))
+            print(f"{ex.filename}: {ex.strerror}")
 
 
 def main():
@@ -122,21 +122,18 @@ def main():
             print(book)
 
     if counting:
+        def display(caption, counts, total):
+            print()
+            print(f"{caption}:")
+            for item in sorted(counts):
+                ctr = counts[item]
+                percent = ctr / total * 100
+                print(f"  {item:16s} {ctr:6d} {percent:6.2f}%")
+            print(f"  {'Total':16s} {total:6d}")
+
         assert book_repo.summary()
-
-        print()
-        print("Detailed:")
-        for item in sorted(list(book_repo.count)):
-            ctr = book_repo.count[item]
-            print("  {:16s} {:6d} {:6.2f}%".format(item, ctr, ctr / book_repo.total * 100))
-        print("  {:16s} {:6d}".format("Total", book_repo.total))
-
-        print()
-        print("Summary:")
-        for item in sorted(list(book_repo.sumcount)):
-            ctr = book_repo.sumcount[item]
-            print("  {:16s} {:6d} {:6.2f}%".format(item, ctr, ctr / book_repo.total * 100))
-        print("  {:16s} {:6d}".format("Total", book_repo.total))
+        display("Detailed", book_repo.count, book_repo.total)
+        display("Summary", book_repo.sumcount, book_repo.total)
 
 
 if __name__ == '__main__':
