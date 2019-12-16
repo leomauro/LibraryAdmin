@@ -212,7 +212,7 @@ class BookSearchWidget(QtWidgets.QWidget):
         grid = QtWidgets.QGridLayout(self)
         grid.addWidget(lbl_find, 0, 0)
         grid.addWidget(self.find, 0, 1)
-        grid.addWidget(self.results, 1, 0)
+        grid.addWidget(self.results, 1, 0, 1, 2)
         grid.addLayout(vbox, 0, 2, 2, 1)
         grid.addWidget(self.view, 2, 0, 1, -1)
 
