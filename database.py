@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 
-from bookrepo import BookRepo
-from sqlite3 import dbapi2 as sqlite
-
-from collections import Counter
 import os
 import sys
+from collections import Counter
+from sqlite3 import dbapi2 as sqlite
+
+from bookrepo import BookRepo
 
 
 class Database(BookRepo):
@@ -44,30 +44,36 @@ class Database(BookRepo):
     def create(self):
         """Create and populate the SQLite database."""
 
-        print("Creating database", self.db_file)
+        print(f"Creating database {self.db_file}")
         self.open()
         cur = self.con.cursor()
-        cur.execute("""
-            create table books (
-                type    varchar(8),
-                dir     varchar(16),
-                title   varchar(256),
-                fsize   int,
-                mtime   int,
-                hash    blob
-            )
-        """)
+        cur.execute(
+                """
+                create table books (
+                    type    varchar(8),
+                    dir     varchar(16),
+                    title   varchar(256),
+                    fsize   int,
+                    mtime   int,
+                    hash    blob
+                )
+                """)
+
         print("  Populating...")
-        cur.executemany("""
-            insert into books (type, dir, title, fsize, mtime) values (?,?,?,?,?)
-                        """,
-                        self.find_books())
+        cur.executemany(
+                "insert into books (type, dir, title, fsize, mtime) values (?,?,?,?,?)",
+                self.find_books())
+
         print("  Indexing...")
-        cur.execute("create index titles on books (title asc)")
+        for index in ("title", "dir", "type"):
+            print(f"    {index}")
+            cur.execute(f"create index {index}s on books ({index} asc)")
+
         print("  Commiting...")
         self.con.commit()
         cur.close()
         self.close()
+
         print("Done")
 
     def find_books(self):
@@ -79,11 +85,14 @@ class Database(BookRepo):
             yield (item.type, item.dir, item.title(), item.size, item.mtime)
 
     def books(self):
-        """Iterator that yields all books in the database."""
+        """
+            Iterator that yields all books in the database.
+            The database is created and populated if it doesn't exist.
+        """
 
         if not os.path.exists(self.db_file):
-            print("Creating database")
             self.create()
+
         self.open()
         cur = self.con.cursor()
         cur.execute("select type, dir, title from books order by title")
@@ -117,21 +126,18 @@ def main():
         book_db.remove()
         book_db.create()
 
+    def display(caption, counts, total):
+        print()
+        print(f"{caption}:")
+        for item in sorted(counts):
+            ctr = counts[item]
+            percent = ctr / total * 100
+            print(f"  {item:16s} {ctr:6d} {percent:6.2f}%")
+        print(f"  {'Total':16s} {total:6d}")
+
     assert book_db.summary()
-
-    print()
-    print("Detailed:")
-    for item in sorted(list(book_db.count)):
-        ctr = book_db.count[item]
-        print("  {:16s} {:6d} {:6.2f}%".format(item, ctr, ctr / book_db.total * 100))
-    print("  {:16s} {:6d}".format("Total", book_db.total))
-
-    print()
-    print("Summary:")
-    for item in sorted(list(book_db.sumcount)):
-        ctr = book_db.sumcount[item]
-        print("  {:16s} {:6d} {:6.2f}%".format(item, ctr, ctr / book_db.total * 100))
-    print("  {:16s} {:6d}".format("Total", book_db.total))
+    display("Detailed", book_db.count, book_db.total)
+    display("Summary", book_db.sumcount, book_db.total)
 
 
 if __name__ == '__main__':
