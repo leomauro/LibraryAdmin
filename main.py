@@ -5,6 +5,7 @@ import os
 import subprocess
 import sys
 from collections import defaultdict
+from dataclasses import dataclass
 from datetime import datetime
 
 from PyQt5 import QtCore
@@ -15,10 +16,19 @@ from PyQt5.QtCore import Qt
 import fmt
 from database import Database
 
+
+@dataclass
+class ApplicationData:
+    name: str
+    mail: str
+    company: str
+    application: str
+    icon: str
+    home: str
+
+
 LIBRARY = os.path.expanduser("~/Library")
 COLLECTIONS = ("Documents", "PROC", "Books", "Papers", "Slides")
-
-APP_ICON = "/usr/share/icons/oxygen/base/64x64/apps/acroread.png"
 
 
 def item_file(item) -> str:
@@ -183,8 +193,9 @@ class BookSearchWidget(QtWidgets.QWidget):
         vbox.addWidget(self.useSubstring)
         vbox.addWidget(self.useWords)
         vbox.addWidget(self.useRE)
-        vbox.addStretch(1)
+        vbox.addSpacing(8)
         vbox.addWidget(self.ignCase)
+        vbox.addStretch(1)
 
         # ... and set the group's layout.
         # self.syntaxGroup.setLayout(vbox)
@@ -451,10 +462,16 @@ class BookSearchWidget(QtWidgets.QWidget):
 class MainWindow(QtWidgets.QMainWindow):
     """The application's main window."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, appData: ApplicationData, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        self.appData = appData
+
         self.setWindowTitle(self.tr("Library Administrator"))
+
+        settings = QtCore.QSettings(self.appData.company, self.appData.application)
+        self.restoreGeometry(settings.value("geometry"))
+        self.restoreState(settings.value("windowState"))
 
         # Instantiate the search widget. It won't be part of the UI yet, since
         # we still don't have one set up, but it will be a children of this
@@ -559,15 +576,30 @@ class MainWindow(QtWidgets.QMainWindow):
 #       self.centralWidget().select({name: action.isChecked()
 #                                    for name, action in self.checkable.items()
 
+    def closeEvent(self, event: QtGui.QCloseEvent) -> None:
+        """Event triggered when window closes.
+
+           Ensure saving app state before exiting.
+        """
+        settings = QtCore.QSettings(self.appData.company, self.appData.application)
+        settings.setValue("geometry", self.saveGeometry())
+        settings.setValue("windowState", self.saveState())
+        super().closeEvent(event)
+
 
 def main():
     locale.setlocale(locale.LC_ALL, '')
 
-    name = "Leopoldo Mauro"
-    mail = "lmauro@usb.ve"
-    home = "https://github.com/leomauro/LibraryAdmin"
+    appData = ApplicationData(
+            name="Leopoldo Mauro",
+            mail="lmauro@usb.ve",
+            company="Universidad Simón Bolívar",
+            application="LibraryAdmin",
+            icon="/usr/share/icons/oxygen/base/64x64/apps/acroread.png",
+            home=f"https://github.com/leomauro/LibraryAdmin"
+    )
 
-#    aboutData = KAboutData("kbooksearch",
+    #    aboutData = KAboutData("kbooksearch",
 #                           "",
 #                           ki18n("Book Search"),
 #                           "1.00",
@@ -583,7 +615,7 @@ def main():
 #    KCmdLineArgs.init(sys.argv, aboutData)
 
     app = QtWidgets.QApplication(sys.argv)
-    win = MainWindow()
+    win = MainWindow(appData)
     win.show()
     return app.exec_()
 
