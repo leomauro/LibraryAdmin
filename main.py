@@ -152,10 +152,10 @@ class BookSearchWidget(QtWidgets.QWidget):
 
         # Line editor widget for search input. It restarts the redisplay timer
         # whenever it changes.
-        lblSearch = QtWidgets.QLabel(self.tr("&Search:"))
-        self.search = QtWidgets.QLineEdit()
-        self.search.textChanged.connect(self.timer)
-        lblSearch.setBuddy(self.search)
+        lbl_find = QtWidgets.QLabel(self.tr("&Find:"))
+        self.find = QtWidgets.QLineEdit()
+        self.find.textChanged.connect(self.timer)
+        lbl_find.setBuddy(self.find)
 
         # Display area for the search results.
         self.results = QtWidgets.QLabel("")
@@ -210,9 +210,9 @@ class BookSearchWidget(QtWidgets.QWidget):
         # And finally, we create a simple grid-like layout to bind everything
         # together.
         grid = QtWidgets.QGridLayout(self)
-        grid.addWidget(lblSearch, 0, 0)
-        grid.addWidget(self.search, 0, 1)
-        grid.addWidget(self.results, 1, 1)
+        grid.addWidget(lbl_find, 0, 0)
+        grid.addWidget(self.find, 0, 1)
+        grid.addWidget(self.results, 0, 1)
         grid.addLayout(vbox, 0, 2, 2, 1)
         grid.addWidget(self.view, 2, 0, 1, -1)
 
@@ -255,7 +255,7 @@ class BookSearchWidget(QtWidgets.QWidget):
         ignore_case = self.ignCase.isChecked()
 
         # Obtain and normalize the filtering (search) text.
-        search_text = self.search.text().strip()
+        search_text = self.find.text().strip()
         search_words = search_text.split()
         if syntax == BookFilterProxyModel.SyntaxSubstring:
             search_text = ' '.join(search_words)
@@ -431,8 +431,8 @@ class BookSearchWidget(QtWidgets.QWidget):
            The search parameters are cleared to their initial state and the
            redisplay timer is started as the parameters might have changed.
         """
-        self.search.clear()
-        self.search.setFocus()
+        self.find.clear()
+        self.find.setFocus()
         self.useSubstring.setChecked(True)
         self.ignCase.setChecked(True)
         self.timer()
