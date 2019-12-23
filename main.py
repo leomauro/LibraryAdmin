@@ -11,7 +11,7 @@ from datetime import datetime
 from PyQt5 import QtCore
 from PyQt5 import QtGui
 from PyQt5 import QtWidgets
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, pyqtSlot
 
 import fmt
 from database import Database
@@ -31,7 +31,7 @@ LIBRARY = os.path.expanduser("~/Library")
 COLLECTIONS = ("Documents", "PROC", "Books", "Papers", "Slides")
 
 
-def item_file(item) -> str:
+def item_file(item: QtCore.QModelIndex) -> str:
     model = item.model()
     t = model.index(item.row(), 0).data()
     w = model.index(item.row(), 1).data()
@@ -377,7 +377,8 @@ class BookSearchWidget(QtWidgets.QWidget):
         # the proxy).
         self.view.resetView()
 
-    def itemEntered(self, item):
+    @pyqtSlot(QtCore.QModelIndex)
+    def itemEntered(self, item: QtCore.QModelIndex):
         """Event triggered when a view's item has been entered with the mouse.
 
            A tooltip displaying the item's file size and modification time is
@@ -405,7 +406,8 @@ class BookSearchWidget(QtWidgets.QWidget):
             time = QtCore.QDateTime(datetime.fromtimestamp(st.st_mtime)).toString()
             self.setToolTip("<br/>".join((size, time)))
 
-    def itemCalled(self, item):
+    @pyqtSlot(QtCore.QModelIndex)
+    def itemCalled(self, item: QtCore.QModelIndex):
         """Event triggered when a view's item has been double-clicked.
 
            We spawn xdg-open to try and display the file.
@@ -446,6 +448,7 @@ class BookSearchWidget(QtWidgets.QWidget):
         self.selection[name] = checked
         self.timer()
 
+    @pyqtSlot()
     def timer(self):
         """Start/restart the redisplay timer."""
         if self.timerId is not None:
@@ -465,116 +468,141 @@ class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, appData: ApplicationData, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        # Restore application window to last saved state.
         self.appData = appData
-
-        self.setWindowTitle(self.tr("Library Administrator"))
-
         settings = QtCore.QSettings(self.appData.company, self.appData.application)
+        self.setWindowTitle(self.tr("Library Administrator"))
         self.restoreGeometry(settings.value("geometry"))
         self.restoreState(settings.value("windowState"))
 
-        # Instantiate the search widget. It won't be part of the UI yet, since
-        # we still don't have one set up, but it will be a children of this
-        # main window. In this way we can connect events to its methods.
+        # Instantiate the search widget as the window's "central widget"---that is,
+        # everything left after the menu bar, tool bar and status bar is allocated.
         search = BookSearchWidget(self)
-
-        #       # Instantiate the "reload" action and add it to the app's action
-        #       # collection. When triggered, it will invoke reload() in the search
-        #       # widget.
-        #       action = self.setupAction("reload", KIcon("view-refresh"),
-        #                                 "&Reload", "Reload book database", "F5")
-        #       action.triggered.connect(search.reload)
-        #
-        #       # Instantiate the "clear" action and add it to the app's action
-        #       # collection. When triggered, it will invoke clear() in the search
-        #       # widget.
-        #       action = self.setupAction("clear", KIcon("edit-clean"),
-        #                                 "&Clear", "Clear search", Qt.CTRL + Qt.Key_U)
-        #       action.triggered.connect(search.clear)
-        #
-        #       # Instantiate the Book Database item-type subsetting actions. Each
-        #       # action is added to the app's action collection and invokes select()
-        #       # in the search widget when triggered.
-        #       #
-        #       # These actions can be toggled between their checked and unchecked
-        #       # states, and this information is passed to the select() method via a
-        #       # "capturing proxy".
-        #       self.setupCheckableAction("books", None, "&Books", "Select books",
-        #                                 Qt.CTRL + Qt.Key_B, search.select)
-        #
-        #       self.setupCheckableAction("papers", None, "&Papers", "Select papers",
-        #                                 Qt.CTRL + Qt.Key_P, search.select)
-        #
-        #       self.setupCheckableAction("slides", None, "&Slides", "Select slides",
-        #                                 Qt.CTRL + Qt.Key_S, search.select)
-        #
-        #       self.setupCheckableAction("documents", None, "&Documents", "Select
-        #       documents",
-        #                                 Qt.CTRL + Qt.Key_D, search.select)
-        #
-        #       self.setupCheckableAction("proc", None, "P&ROC", "Select PROC",
-        #                                 Qt.CTRL + Qt.Key_R, search.select)
-        #
-        #       # Add the "quit" standard action. When triggered it will invoke the
-        #       # class' built-in close() method.
-        #       # @TODO
-        #       KStandardAction.quit(self, QtCore.SLOT("close()"),
-        #       self.actionCollection())
-
-        # The search widget is finally set as the window's "central widget"---that is,
-        # everything that's left after the menu bar, tool bar and status bar is allocated.
         self.setCentralWidget(search)
 
+        # Instantiate a default, empty status bar for convenience.
+        self.statusBar()
 
-#       # Tie everything together with the XML UI description, adjust widget
-#       # metrics and spacings where appropriate to create a visualy pleasing
-#       # display, and let it rip...
-#       self.setupGUI()
+        # Add menus and actions.
+        self.createActions(search)
 
-#       # Enable the automatic saving of the app settings on exit and loading
-#       # on activation. At the moment this only includes the main window
-#       # geometry, but anything can be saved.
-#       # @TODO
-#       self.setAutoSaveSettings()
+    def createActions(self, search):
+        """Create and put in place the menu and toolbar actions."""
 
-#   def setupAction(self, name, icon, label, helpmsg, shortcut):
-#       """Setup an action and add it to the action collection.
-#          Returns the action for further configuration.
-#       """
-#       if icon is not None:
-#           action = KAction(icon, QCoreApplication.translate(self.__class__.__name__,
-#                                                             label), self)
-#       else:
-#           action = KAction(QCoreApplication.translate(self.__class__.__name__,
-#                                                       label), self)
-#       action.setHelpText(QCoreApplication.translate(self.__class__.__name__,
-#                                                     helpmsg))
-#       action.setShortcut(shortcut)
-#       self.actionCollection().addAction(name, action)
-#       return action
+        exitAct = self.makeAction('&Exit',
+                                  'Exit Library Administrator',
+                                  'Ctrl+Q',
+                                  'exit.png',
+                                  QtWidgets.qApp.quit)
 
-#   def setupCheckableAction(self, name, icon, label, helpmsg, shortcut, method):
-#       """Setup an action as per setupAction(), flags it as checkable, and
-#          sets it as checked.
-#       """
-#       action = self.setupAction(name, icon, label, helpmsg, shortcut)
-#       action.setCheckable(True)
-#       action.setChecked(True)
-#
-#       def proxy():
-#           return method(name, action.isChecked())
-#
-#       action.triggered.connect(proxy)
-#       proxy()
+        reloadAct = self.makeAction('&Reload',
+                                    'Reload library database',
+                                    'F5',
+                                    'view-refresh.png',
+                                    search.reload)
 
-#   def select(self):
-#       """Event triggered by the various checkable actions.
-#
-#          Create a dictionary of the action names and their check state to
-#          pass to the search widget.
-#       """
-#       self.centralWidget().select({name: action.isChecked()
-#                                    for name, action in self.checkable.items()
+        clearAct = self.makeAction('&Clear',
+                                   'Clear and reset search',
+                                   'Ctrl+U',
+                                   'edit-clear.png',
+                                   search.clear)
+
+        helpAct = self.makeAction('&Help',
+                                  'Program Documentation',
+                                  'F1',
+                                  'help-contents.png')
+
+        aboutAct = self.makeAction('&About',
+                                   'Show information about Library Administrator',
+                                   None,
+                                   'help-about.png')
+
+        # The menu bar.
+        menubar = self.menuBar()
+
+        fileMenu = menubar.addMenu(self.tr('&File'))
+        fileMenu.addAction(exitAct)
+
+        searchMenu = menubar.addMenu(self.tr('&Search'))
+        searchMenu.addAction(reloadAct)
+        searchMenu.addAction(clearAct)
+
+        helpMenu = menubar.addMenu(self.tr('&Help'))
+        helpMenu.addAction(helpAct)
+        helpMenu.addAction(aboutAct)
+
+    def makeAction(self, item, help, shortcut=None, icon=None, slot=None):
+        """Setup an action and add it to the action collection.
+           Returns the action for further configuration.
+        """
+        if icon is not None:
+            action = QtWidgets.QAction(QtGui.QIcon(icon), self.tr(item), self)
+        else:
+            action = QtWidgets.QAction(self.tr(item), self)
+        if shortcut is not None:
+            action.setShortcut(self.tr(shortcut))
+        action.setStatusTip(self.tr(help))
+        if slot is not None:
+            action.triggered.connect(slot)
+        return action
+
+    #       # Instantiate the Book Database item-type subsetting actions. Each
+    #       # action is added to the app's action collection and invokes select()
+    #       # in the search widget when triggered.
+    #       #
+    #       # These actions can be toggled between their checked and unchecked
+    #       # states, and this information is passed to the select() method via a
+    #       # "capturing proxy".
+    #       self.setupCheckableAction("books", None, "&Books", "Select books",
+    #                                 Qt.CTRL + Qt.Key_B, search.select)
+    #
+    #       self.setupCheckableAction("papers", None, "&Papers", "Select papers",
+    #                                 Qt.CTRL + Qt.Key_P, search.select)
+    #
+    #       self.setupCheckableAction("slides", None, "&Slides", "Select slides",
+    #                                 Qt.CTRL + Qt.Key_S, search.select)
+    #
+    #       self.setupCheckableAction("documents", None, "&Documents", "Select
+    #       documents",
+    #                                 Qt.CTRL + Qt.Key_D, search.select)
+    #
+    #       self.setupCheckableAction("proc", None, "P&ROC", "Select PROC",
+    #                                 Qt.CTRL + Qt.Key_R, search.select)
+    #
+
+    #       # Tie everything together with the XML UI description, adjust widget
+    #       # metrics and spacings where appropriate to create a visualy pleasing
+    #       # display, and let it rip...
+    #       self.setupGUI()
+
+    #       # Enable the automatic saving of the app settings on exit and loading
+    #       # on activation. At the moment this only includes the main window
+    #       # geometry, but anything can be saved.
+    #       # @TODO
+    #       self.setAutoSaveSettings()
+
+    #   def setupCheckableAction(self, name, icon, label, helpmsg, shortcut, method):
+    #       """Setup an action as per makeAction(), flags it as checkable, and
+    #          sets it as checked.
+    #       """
+    #       action = self.setupAction(name, icon, label, helpmsg, shortcut)
+    #       action.setCheckable(True)
+    #       action.setChecked(True)
+    #
+    #       def proxy():
+    #           return method(name, action.isChecked())
+    #
+    #       action.triggered.connect(proxy)
+    #       proxy()
+
+    #   def select(self):
+    #       """Event triggered by the various checkable actions.
+    #
+    #          Create a dictionary of the action names and their check state to
+    #          pass to the search widget.
+    #       """
+    #       self.centralWidget().select({name: action.isChecked()
+    #                                    for name, action in self.checkable.items()
 
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:
         """Event triggered when window closes.
@@ -600,19 +628,19 @@ def main():
     )
 
     #    aboutData = KAboutData("kbooksearch",
-#                           "",
-#                           ki18n("Book Search"),
-#                           "1.00",
-#                           ki18n("Search book database"),
-#                           KAboutData.License_GPL_V3,
-#                           ki18n("(C) 2010-2019 " + name),
-#                           ki18n(""),
-#                           home + "/kbooksearch",
-#                           mail)
-#    aboutData.addAuthor(ki18n(name), ki18n("Author"), mail, home)
-#    aboutData.setProgramIconName(APP_ICON)
-#
-#    KCmdLineArgs.init(sys.argv, aboutData)
+    #                           "",
+    #                           ki18n("Book Search"),
+    #                           "1.00",
+    #                           ki18n("Search book database"),
+    #                           KAboutData.License_GPL_V3,
+    #                           ki18n("(C) 2010-2019 " + name),
+    #                           ki18n(""),
+    #                           home + "/kbooksearch",
+    #                           mail)
+    #    aboutData.addAuthor(ki18n(name), ki18n("Author"), mail, home)
+    #    aboutData.setProgramIconName(APP_ICON)
+    #
+    #    KCmdLineArgs.init(sys.argv, aboutData)
 
     app = QtWidgets.QApplication(sys.argv)
     win = MainWindow(appData)
