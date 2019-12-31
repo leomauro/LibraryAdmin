@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 
-from fileitem import FileItem
-
-from collections import Counter
 import mimetypes
 import os
-#import scandir
+# import scandir
 import sys
+from collections import Counter
+
+from fileitem import FileItem
 
 
 class BookRepo:
@@ -80,9 +80,9 @@ class BookRepo:
                         exts = [ext + ".gz" for ext in exts]
                     for ext in exts:
                         if filename.endswith(ext):
-                           filename = filename[:-len(ext)]
-                           filetype = ext[1:]
-                           break;
+                            filename = filename[:-len(ext)]
+                            filetype = ext[1:]
+                            break;
 
                 self.count[directory] += 1
                 yield FileItem(dir=directory,
