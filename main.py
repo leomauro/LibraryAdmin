@@ -28,6 +28,7 @@ from PyQt5.QtWidgets import (qApp,
                              QAction,
                              QApplication,
                              QCheckBox,
+                             QFrame,
                              QGridLayout,
                              QHeaderView,
                              QLabel,
@@ -130,7 +131,7 @@ class BookFilterProxyModel(QSortFilterProxyModel):
         self.setFilterKeyColumn(2)
 
 
-class BookSearchWidget(QWidget):
+class BookSearch(QWidget):
     """The Book Search widget occupying our window's central widget."""
 
     def __init__(self, *args, **kwargs):
@@ -173,7 +174,6 @@ class BookSearchWidget(QWidget):
         # Start a short timer to delay a little bit the initial database and model
         # loading. This is done in order to avoid "freezing" the UI when we start the
         # program and the model simultaneously tries to load and display.
-        self.setStatusTip(self.tr("Initializing..."))
         self.timerId = self.startTimer(500)
 
     def setupUI(self):
@@ -183,7 +183,7 @@ class BookSearchWidget(QWidget):
 
         # The grid layout we'll use to assemble the whole composite widget.
         grid = QGridLayout(self)
-        grid.setVerticalSpacing(2)
+        grid.setSpacing(6)
 
         # The line editor widget for the search input.
         # It restarts the redisplay timer whenever it changes.
@@ -215,8 +215,7 @@ class BookSearchWidget(QWidget):
         self.syntax_ICase.setChecked(True)
         self.syntax_ICase.toggled.connect(self.timer)
         self.syntax_INonA = QCheckBox(self.tr("Only &Alphanumeric"))
-        self.syntax_INonA.setStatusTip(
-            self.tr("Search ignores non-alphanumeric characters"))
+        self.syntax_INonA.setStatusTip(self.tr("Search ignores non-alphanumerics"))
         self.syntax_INonA.toggled.connect(self.timer)
 
         grid.addWidget(self.syntax_strng, 0, 3)
@@ -226,13 +225,13 @@ class BookSearchWidget(QWidget):
         grid.addWidget(self.syntax_INonA, 4, 3)
 
         # Create the display area for the search statistics.
-        self.results = QLabel()
-        self.results.setStyleSheet("background-color: lightgray;")
-        grid.addWidget(self.results, 1, 0, -1, 2)
+        self.statistics = QLabel("")
+        self.statistics.setFrameStyle(QFrame.StyledPanel | QFrame.Sunken)
+        grid.addWidget(self.statistics, 1, 1, 4, 1)
 
         # Now we create the viewer for the Book model. It responds to double-clicks and
         # mouse entering/leaving an item. See itemCalled() and itemEntered() respectively.
-        self.view = BookView(self)
+        self.view = BookView()
         self.view.doubleClicked.connect(self.itemCalled)
         self.view.entered.connect(self.itemEntered)
         grid.addWidget(self.view, 5, 0, -1, -1)
@@ -240,7 +239,6 @@ class BookSearchWidget(QWidget):
     def db(self):
         """Return the Book Database, loading and caching it the first time."""
         if self._book_db is None:
-            self.setStatusTip(self.tr("Loading Library Database..."))
             self._book_db = Database(LIBRARY, COLLECTIONS)
         return self._book_db
 
@@ -290,7 +288,6 @@ class BookSearchWidget(QWidget):
 
         # Setup the filtering and apply it to the proxy model.
         # @TODO
-        self.setStatusTip(self.tr("Searching database..."))
         re = QRegExp(search_text,
                      Qt.CaseInsensitive if ignore_case else
                      Qt.CaseSensitive,
@@ -331,21 +328,18 @@ class BookSearchWidget(QWidget):
         line.append(fmt_summary(self.tr("Total"), total))
         lines.append(line)
 
-        self.results.setText("\n".join(", ".join(line) for line in lines))
+        self.statistics.setText("\n".join(", ".join(line) for line in lines))
 
         # ... and making sure the tooltip mechanism has been appropriately reset (since
         # the view has changed due to the proxy filtering having been recomputed).
         self.lastItem = None
-        self.setToolTip("")
+        self.view.setToolTip("")
 
         # Now we can restore the cursor and status.
-        self.setStatusTip("Ready")
         QApplication.restoreOverrideCursor()
 
     def loadModel(self):
         """Load a new Book model."""
-
-        self.setStatusTip(self.tr("Loading database..."))
 
         # Disassociate any pre-existing model from the proxy.
         self.proxyModel.setSourceModel(None)
@@ -377,8 +371,6 @@ class BookSearchWidget(QWidget):
         # proxy).
         self.view.resetView()
 
-        self.setStatusTip(self.tr("Ready"))
-
     @pyqtSlot(QModelIndex)
     def itemEntered(self, item: QModelIndex):
         """Event triggered when a view's item has been entered with the mouse.
@@ -406,7 +398,7 @@ class BookSearchWidget(QWidget):
             # time = applocale.formatDateTime(datetime.fromtimestamp(st.st_mtime))
             size = HumanBytes(st.st_size)
             time = QDateTime(datetime.fromtimestamp(st.st_mtime)).toString()
-            self.setToolTip("<br/>".join((size, time)))
+            self.view.setToolTip("<br/>".join((size, time)))
 
     @pyqtSlot(QModelIndex)
     def itemCalled(self, item: QModelIndex):
@@ -480,7 +472,7 @@ class MainWindow(QMainWindow):
 
         # Instantiate the search widget as the window's "central widget"---that is,
         # everything left after the menu bar, tool bar and status bar is allocated.
-        self.search = BookSearchWidget(self)
+        self.search = BookSearch()
         self.setCentralWidget(self.search)
         self.setupMenu()
         self.statusBar()
@@ -511,7 +503,7 @@ class MainWindow(QMainWindow):
                                 'Exit Library Administrator',
                                 'application-exit',
                                 'Ctrl+Q',
-                                qApp.quit))
+                                slot=qApp.quit))
 
         # Search menu.
         search = self.menuBar().addMenu(self.tr('&Search'))
@@ -519,39 +511,39 @@ class MainWindow(QMainWindow):
                                   'Clear and reset search',
                                   'edit-clear',
                                   'Ctrl+U',
-                                  self.search.clear))
+                                  slot=self.search.clear))
         search.addSeparator()
         search.addAction(mkaction('&Undo',
                                   'Undo changes to search',
                                   'edit-undo',
                                   'Ctrl+Z',
-                                  self.search.find.undo))
+                                  slot=self.search.find.undo))
         search.addAction(mkaction('Cu&t',
                                   'Cut selection to clipboard',
                                   'edit-cut',
                                   'Ctrl+X',
-                                  self.search.find.cut))
+                                  slot=self.search.find.cut))
         search.addAction(mkaction('&Copy',
                                   'Copy search string to clipboard',
                                   'edit-copy',
                                   'Ctrl+C',
-                                  self.search.find.copy))
+                                  slot=self.search.find.copy))
         search.addAction(mkaction('&Paste',
                                   'Paste clipboard',
                                   'edit-paste',
                                   'Ctrl+V',
-                                  self.search.find.paste))
+                                  slot=self.search.find.paste))
         search.addAction(mkaction('Select All',
                                   'Select the whole search string',
                                   'edit-select-all',
                                   'Ctrl+A',
-                                  self.search.find.selectAll))
+                                  slot=self.search.find.selectAll))
         search.addSeparator()
         search.addAction(mkaction('&Reload',
                                   'Reload library database',
                                   'view-refresh',
                                   'F5',
-                                  self.search.reload))
+                                  slot=self.search.reload))
 
         # Help menu.
         help = self.menuBar().addMenu(self.tr('&Help'))
@@ -563,6 +555,10 @@ class MainWindow(QMainWindow):
         help.addAction(mkaction('&About',
                                 'Show information about Library Administrator',
                                 'help-about'))
+        help.addAction(mkaction('About &Qt',
+                                'Show information about Qt',
+                                slot=qApp.aboutQt))
+
 
     #       # Instantiate the Book Database item-type subsetting actions. Each
     #       # action is added to the app's action collection and invokes select()
