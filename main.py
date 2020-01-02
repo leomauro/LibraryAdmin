@@ -40,6 +40,7 @@ from PyQt5.QtWidgets import (qApp,
 
 from appdata import ApplicationData
 from database import Database
+from mongo import Books
 from fmt import HumanBytes
 
 LIBRARY = os.path.expanduser("~/Library")
@@ -139,6 +140,7 @@ class BookSearch(QWidget):
 
         # We have no cached Book Database or Book model (yet) ...
         self._book_db = None
+        self._mongo_db = None
         self.model = None
 
         # ... and our item-type subset selection is empty, defaulting to False for any
@@ -419,6 +421,22 @@ class BookSearch(QWidget):
             self._book_db = None
         self.display(reload=True)
 
+    @pyqtSlot()
+    def rescan(self):
+        """Event triggered when the "rescan" action in the main window is activated.
+
+           The Book Database is caused to be reindexed. We do that by using the MONGO
+           database system. Then we force a reload of the SQL instance.
+
+           @TODO Unify this under only one database (most probably MONGO...)
+        """
+        if self._mongo_db is None:
+            self._mongo_db = Books(LIBRARY, COLLECTIONS)
+            self._mongo_db.checknew()
+            self._mongo_db.cleanup()
+        self.reload()
+
+    @pyqtSlot()
     def clear(self):
         """Event triggered when the "clear" action in the main window is activated.
 
