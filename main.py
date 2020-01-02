@@ -80,7 +80,7 @@ class BookView(QTreeView):
         self.setAcceptDrops(False)
         self.dragStart = QPoint()
 
-    def resetView(self):
+    def reload(self):
         self.sortByColumn(2, Qt.AscendingOrder)
         self.resizeColumnToContents(0)
         self.resizeColumnToContents(1)
@@ -372,7 +372,7 @@ class BookSearch(QWidget):
 
         # Finally, we reset the view so it displays the newly loaded model (via the
         # proxy).
-        self.view.resetView()
+        self.view.reload()
 
     @pyqtSlot(QModelIndex)
     def itemEntered(self, item: QModelIndex):
