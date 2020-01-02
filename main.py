@@ -229,6 +229,7 @@ class BookSearch(QWidget):
         # Create the display area for the search statistics.
         self.statistics = QLabel("")
         self.statistics.setFrameStyle(QFrame.StyledPanel | QFrame.Sunken)
+
         grid.addWidget(self.statistics, 1, 1, 4, 1)
 
         # Now we create the viewer for the Book model. It responds to double-clicks and
@@ -236,6 +237,7 @@ class BookSearch(QWidget):
         self.view = BookView()
         self.view.doubleClicked.connect(self.itemCalled)
         self.view.entered.connect(self.itemEntered)
+
         grid.addWidget(self.view, 5, 0, -1, -1)
 
     def db(self):
@@ -248,8 +250,7 @@ class BookSearch(QWidget):
         """Display the (filtered) model."""
 
         # Collect and process the filter parameters.
-        if self.syntax_strng.isChecked():
-            syntax = BookFilterProxyModel.SyntaxSubstring
+        syntax = BookFilterProxyModel.SyntaxSubstring
         if self.syntax_words.isChecked():
             syntax = BookFilterProxyModel.SyntaxWords
         if self.syntax_RegEx.isChecked():
@@ -289,7 +290,7 @@ class BookSearch(QWidget):
             self.loadModel()
 
         # Setup the filtering and apply it to the proxy model.
-        # @TODO
+        # @TODO Extend the filtering mechanisms
         re = QRegExp(search_text,
                      Qt.CaseInsensitive if ignore_case else
                      Qt.CaseSensitive,
@@ -410,6 +411,7 @@ class BookSearch(QWidget):
         """
         subprocess.Popen(["xdg-open", item_file(item)])
 
+    @pyqtSlot()
     def reload(self):
         """Event triggered when the "reload" action in the main window is activated.
 
@@ -446,10 +448,11 @@ class BookSearch(QWidget):
         self.find.clear()
         self.find.setFocus()
         self.syntax_strng.setChecked(True)
-        self.ignCase.setChecked(True)
-        self.onlyAlNum.setChecked(False)
+        self.syntax_ICase.setChecked(True)
+        self.syntax_INonA.setChecked(False)
         self.timer()
 
+    @pyqtSlot()
     def select(self, name, checked):
         """Event triggered when the item-type selecting actions in the main window are
            activated.
@@ -531,37 +534,16 @@ class MainWindow(QMainWindow):
                                   'Ctrl+U',
                                   slot=self.search.clear))
         search.addSeparator()
-        search.addAction(mkaction('&Undo',
-                                  'Undo changes to search',
-                                  'edit-undo',
-                                  'Ctrl+Z',
-                                  slot=self.search.find.undo))
-        search.addAction(mkaction('Cu&t',
-                                  'Cut selection to clipboard',
-                                  'edit-cut',
-                                  'Ctrl+X',
-                                  slot=self.search.find.cut))
-        search.addAction(mkaction('&Copy',
-                                  'Copy search string to clipboard',
-                                  'edit-copy',
-                                  'Ctrl+C',
-                                  slot=self.search.find.copy))
-        search.addAction(mkaction('&Paste',
-                                  'Paste clipboard',
-                                  'edit-paste',
-                                  'Ctrl+V',
-                                  slot=self.search.find.paste))
-        search.addAction(mkaction('Select All',
-                                  'Select the whole search string',
-                                  'edit-select-all',
-                                  'Ctrl+A',
-                                  slot=self.search.find.selectAll))
-        search.addSeparator()
-        search.addAction(mkaction('&Reload',
+        search.addAction(mkaction('Re&load',
                                   'Reload library database',
                                   'view-refresh',
                                   'F5',
                                   slot=self.search.reload))
+        search.addAction(mkaction('Re&scan',
+                                  'Reindex library database',
+                                  'view-refresh',
+                                  'Shift+F5',
+                                  slot=self.search.rescan))
 
         # Help menu.
         help = self.menuBar().addMenu(self.tr('&Help'))
@@ -674,5 +656,5 @@ def main():
     return app.exec()
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     sys.exit(main())
