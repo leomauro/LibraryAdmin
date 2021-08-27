@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/ python3
 # -*- coding: utf-8 -*-
 
 import locale
@@ -75,18 +75,21 @@ class BookView(QTreeView):
         self.setMouseTracking(True)
 
         self.setDragDropMode(QTreeView.DragDrop)
-        self.setAcceptDrops(True)
         self.setDragEnabled(True)
         self.setAcceptDrops(False)
         self.dragStart = QPoint()
 
     def reload(self):
+        self.header().setSectionResizeMode(0, QHeaderView.ResizeToContents)
+        self.header().setSectionResizeMode(1, QHeaderView.ResizeToContents)
+        self.header().setSectionResizeMode(2, QHeaderView.ResizeToContents)
+        self.header().setStretchLastSection(False)
+
         self.sortByColumn(2, Qt.AscendingOrder)
+
         self.resizeColumnToContents(0)
         self.resizeColumnToContents(1)
         self.resizeColumnToContents(2)
-        self.header().setSectionResizeMode(2, QHeaderView.ResizeToContents)
-        self.header().setStretchLastSection(False)
 
     def mousePressEvent(self, event):
         super().mousePressEvent(event)
@@ -138,18 +141,20 @@ class BookSearch(QWidget):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        self.setStyleSheet("font-size: 9.5;")
+
         # We have no cached Book Database or Book model (yet) ...
         self._book_db = None
         self._mongo_db = None
         self.model = None
 
-        # ... and our item-type subset selection is empty, defaulting to False for any
-        # selection.
+        # ... and our item-type subset selection is empty, defaulting to False
+        # for any selection.
         self.selection = defaultdict(bool)
 
-        # Initialize our current search parameters to "undefined". In this way, as soon as
-        # we input something or change the settings we will notice and the filter proxy
-        # will be set up to produce the appropriate
+        # Initialize our current search parameters to "undefined". In this way,
+        # as soon as we input something or change the settings we will notice
+        # and the filter proxy will be set up to produce the appropriate
         # filtered model.
         self.currSearch = None
         self.currSyntax = None
@@ -157,25 +162,28 @@ class BookSearch(QWidget):
         self.currAlNum = None
         self.currSelection = None
 
-        # We also keep track of the most recent model item to have its tooltip displayed.
-        # We don't want to waste time recomputing the tooltip as the mouse moves, unless
-        # the item changes due to the movement. See itemEntered().
+        # We also keep track of the most recent model item to have its tooltip
+        # displayed.  We don't want to waste time recomputing the tooltip as
+        # the mouse moves, unless the item changes due to the movement. See
+        # itemEntered().
         self.lastItem = None
 
         # Create the search widget's UI, which includes the viewer widget.
         self.setupUI()
 
-        # Set up a proxy to filter and sort our model. This way we don't have to modify
-        # the underlying Book model, which is usually loaded just once, initially, but
-        # that can be forced to be reloaded if we want to recompute the Book Database.
+        # Set up a proxy to filter and sort our model. This way we don't have
+        # to modify the underlying Book model, which is usually loaded just
+        # once, initially, but that can be forced to be reloaded if we want to
+        # recompute the Book Database.
         self.proxyModel = BookFilterProxyModel()
         self.view.setModel(self.proxyModel)
 
         # We're done!
         #
-        # Start a short timer to delay a little bit the initial database and model
-        # loading. This is done in order to avoid "freezing" the UI when we start the
-        # program and the model simultaneously tries to load and display.
+        # Start a short timer to delay a little bit the initial database and
+        # model loading. This is done in order to avoid "freezing" the UI when
+        # we start the program and the model simultaneously tries to load and
+        # display.
         self.timerId = self.startTimer(500)
 
     def setupUI(self):
@@ -185,7 +193,7 @@ class BookSearch(QWidget):
 
         # The grid layout we'll use to assemble the whole composite widget.
         grid = QGridLayout(self)
-        grid.setSpacing(6)
+        grid.setSpacing(4)
 
         # The line editor widget for the search input.
         # It restarts the redisplay timer whenever it changes.
@@ -232,8 +240,9 @@ class BookSearch(QWidget):
 
         grid.addWidget(self.statistics, 1, 1, 4, 1)
 
-        # Now we create the viewer for the Book model. It responds to double-clicks and
-        # mouse entering/leaving an item. See itemCalled() and itemEntered() respectively.
+        # Now we create the viewer for the Book model. It responds to
+        # double-clicks and mouse entering/leaving an item. See itemCalled()
+        # and itemEntered() respectively.
         self.view = BookView()
         self.view.doubleClicked.connect(self.itemCalled)
         self.view.entered.connect(self.itemEntered)
@@ -264,7 +273,8 @@ class BookSearch(QWidget):
         if syntax == BookFilterProxyModel.SyntaxSubstring:
             search_text = ' '.join(search_words)
 
-        # If we're not being asked to reload and nothing has changed, do nothing.
+        # If we're not being asked to reload and nothing has changed, do
+        # nothing.
         if not reload and \
                 search_text == self.currSearch and \
                 syntax == self.currSyntax and \
@@ -278,14 +288,16 @@ class BookSearch(QWidget):
         # Put up a Wait Cursor.
         QApplication.setOverrideCursor(Qt.WaitCursor)
 
-        # Remember the filtering parameters so we can detect changes at a later time.
+        # Remember the filtering parameters so we can detect changes at a later
+        # time.
         self.currSearch = search_text
         self.currSyntax = syntax
         self.currCase = ignore_case
         self.currAlNum = only_alnum
         self.currSelection = self.selection.copy()
 
-        # Load the model if we don't have one yet or we've been asked to reload.
+        # Load the model if we don't have one yet or we've been asked to
+        # reload.
         if self.model is None or reload:
             self.loadModel()
 
@@ -300,20 +312,22 @@ class BookSearch(QWidget):
 
         # We're done!
         #
-        # Just a few final cosmetic/convenience details, like displaying the filtering
-        # statistics...
-        modelCount = self.model.rowCount()
-        proxyCount = self.proxyModel.rowCount()
+        # Just a few final cosmetic/convenience details, like displaying the
+        # filtering statistics...
+        model_count = self.model.rowCount()
+        proxy_count = self.proxyModel.rowCount()
         lines = []
 
-        line = [self.tr("{:n} titles").format(modelCount)]
-        if modelCount != proxyCount:
-            line.append(self.tr("{:n} matched").format(proxyCount))
+        line = [self.tr("{:n} titles").format(model_count)]
+        if model_count != proxy_count:
+            line.append(self.tr("{:n} matched").format(proxy_count))
         lines.append(line)
 
         # Convenience function
         def fmt_summary(item, cnt):
-            return "{}: {:n} ({:.2%})".format(self.tr(item), cnt, cnt / modelCount)
+            return "{}: {:n} ({:.2%})".format(self.tr(item),
+                                              cnt,
+                                              cnt / model_count)
 
         line = []
         self.db().summary()
@@ -333,8 +347,9 @@ class BookSearch(QWidget):
 
         self.statistics.setText("\n".join(", ".join(line) for line in lines))
 
-        # ... and making sure the tooltip mechanism has been appropriately reset (since
-        # the view has changed due to the proxy filtering having been recomputed).
+        # ... and making sure the tooltip mechanism has been appropriately
+        # reset (since the view has changed due to the proxy filtering having
+        # been recomputed).
         self.lastItem = None
         self.view.setToolTip("")
 
@@ -347,15 +362,15 @@ class BookSearch(QWidget):
         # Disassociate any pre-existing model from the proxy.
         self.proxyModel.setSourceModel(None)
 
-        # If we don't have an instantiated model yet we create an empty one. Otherwise we
-        # clear the one we have (less garbage collection...).
+        # If we don't have an instantiated model yet we create an empty one.
+        # Otherwise we clear the one we have (less garbage collection...).
         if self.model is None:
             self.model = QStandardItemModel(0, 3, self)
         else:
             self.model.clear()
 
-        # Setup the model's header labels. The Model Viewer will detect clicks on these
-        # labels and sort the (proxy) model for us.
+        # Setup the model's header labels. The Model Viewer will detect clicks
+        # on these labels and sort the (proxy) model for us.
         self.model.setHorizontalHeaderLabels([self.tr("Type"),
                                               self.tr("Where"),
                                               self.tr("Name")])
@@ -366,25 +381,25 @@ class BookSearch(QWidget):
                                   QStandardItem(book[1]),
                                   QStandardItem(book[2])])
 
-        # Associate the model with the proxy. Note that at this point the proxy will apply
-        # any filtering we have programmed into it.
+        # Associate the model with the proxy. Note that at this point the proxy
+        # will apply any filtering we have programmed into it.
         self.proxyModel.setSourceModel(self.model)
 
-        # Finally, we reset the view so it displays the newly loaded model (via the
-        # proxy).
+        # Finally, we reset the view so it displays the newly loaded model (via
+        # the proxy).
         self.view.reload()
 
     @pyqtSlot(QModelIndex)
     def itemEntered(self, item: QModelIndex):
         """Event triggered when a view's item has been entered with the mouse.
 
-           A tooltip displaying the item's file size and modification time is associated
-           with the view widget.
+           A tooltip displaying the item's file size and modification time is
+           associated with the view widget.
         """
 
-        # Don't waste time recomputing the tooltip if the mouse has re-entered the last
-        # visited item---the mouse could have left the view widget altogether, and then
-        # re-entered it within the same item's area.
+        # Don't waste time recomputing the tooltip if the mouse has re-entered
+        # the last visited item---the mouse could have left the view widget
+        # altogether, and then re-entered it within the same item's area.
         if item != self.lastItem:
             self.lastItem = item
 
@@ -394,8 +409,8 @@ class BookSearch(QWidget):
             except:
                 return
 
-            # Format the size and modification time using the app's locale, and set it as
-            # the widget's tooltip.
+            # Format the size and modification time using the app's locale, and
+            # set it as the widget's tooltip.
             # applocale = KGlobal.locale()
             # size = applocale.formatByteSize(st.st_size, 1)
             # time = applocale.formatDateTime(datetime.fromtimestamp(st.st_mtime))
@@ -415,8 +430,8 @@ class BookSearch(QWidget):
     def reload(self):
         """Event triggered when the "reload" action in the main window is activated.
 
-           The Book Database is caused to be rebuilt. We do that by removing it and then
-           forcing the model to be re-displayed.
+           The Book Database is caused to be rebuilt. We do that by removing it
+           and then forcing the model to be re-displayed.
         """
         if self._book_db is not None:
             self._book_db.remove()
@@ -427,8 +442,8 @@ class BookSearch(QWidget):
     def rescan(self):
         """Event triggered when the "rescan" action in the main window is activated.
 
-           The Book Database is caused to be reindexed. We do that by using the MONGO
-           database system. Then we force a reload of the SQL instance.
+           The Book Database is caused to be reindexed. We do that by using the
+           MONGO database system. Then we force a reload of the SQL instance.
 
            @TODO Unify this under only one database (most probably MONGO...)
         """
@@ -442,8 +457,8 @@ class BookSearch(QWidget):
     def clear(self):
         """Event triggered when the "clear" action in the main window is activated.
 
-           The search parameters are cleared to their initial state and the redisplay
-           timer is started as the parameters might have changed.
+           The search parameters are cleared to their initial state and the
+           redisplay timer is started as the parameters might have changed.
         """
         self.find.clear()
         self.find.setFocus()
@@ -483,16 +498,24 @@ class MainWindow(QMainWindow):
     def __init__(self, appData: ApplicationData, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.appData = appData
-        self.settings = QSettings(self.appData.company, self.appData.application)
-
-        # Restore application window to last saved state.
         self.setWindowTitle(self.tr("Library Administrator"))
-        self.restoreGeometry(self.settings.value('geometry'))
-        self.restoreState(self.settings.value('windowState'))
 
-        # Instantiate the search widget as the window's "central widget"---that is,
-        # everything left after the menu bar, tool bar and status bar is allocated.
+        # Restore application's window to last saved state.
+        self.appData = appData
+        self.settings = QSettings(self.appData.company,
+                                  self.appData.application)
+
+        win_geometry = self.settings.value('geometry')
+        if win_geometry is not None:
+            self.restoreGeometry(win_geometry)
+
+        win_state = self.settings.value('windowState')
+        if win_state is not None:
+            self.restoreState(win_state)
+
+        # Instantiate the search widget as the window's "central widget", which
+        # is the area left after the menu bar, tool bar and status bar has been
+        # allocated.
         self.search = BookSearch()
         self.setCentralWidget(self.search)
         self.setupMenu()
@@ -559,14 +582,13 @@ class MainWindow(QMainWindow):
                                 'Show information about Qt',
                                 slot=qApp.aboutQt))
 
-
     #       # Instantiate the Book Database item-type subsetting actions. Each
-    #       # action is added to the app's action collection and invokes select()
-    #       # in the search widget when triggered.
+    #       # action is added to the app's action collection and invokes
+    #       # select() in the search widget when triggered.
     #       #
     #       # These actions can be toggled between their checked and unchecked
-    #       # states, and this information is passed to the select() method via a
-    #       # "capturing proxy".
+    #       # states, and this information is passed to the select() method via
+    #       # a "capturing proxy".
     #       self.setupCheckableAction("books", None, "&Books", "Select books",
     #                                 Qt.CTRL + Qt.Key_B, search.select)
     #
@@ -576,8 +598,7 @@ class MainWindow(QMainWindow):
     #       self.setupCheckableAction("slides", None, "&Slides", "Select slides",
     #                                 Qt.CTRL + Qt.Key_S, search.select)
     #
-    #       self.setupCheckableAction("documents", None, "&Documents", "Select
-    #       documents",
+    #       self.setupCheckableAction("documents", None, "&Documents", "Select documents",
     #                                 Qt.CTRL + Qt.Key_D, search.select)
     #
     #       self.setupCheckableAction("proc", None, "P&ROC", "Select PROC",
@@ -622,6 +643,7 @@ def main():
     locale.setlocale(locale.LC_ALL, '')
 
     appdir = os.path.split(sys.argv[0])[0]
+    print(f"{appdir=}")
 
     appData = ApplicationData(
             name="Leopoldo Mauro",

@@ -54,7 +54,7 @@ class BookRepo:
         """
 
         dirpath = os.path.join(self.db_dir, directory)
-        print(f"    Scanning {dirpath}")
+        print(f"    Scanning {directory}")
         if directory not in self.count:
             self.count[directory] = 0
 
