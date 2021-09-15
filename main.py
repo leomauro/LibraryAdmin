@@ -1,4 +1,4 @@
-#!/usr/bin/ python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 import locale
@@ -40,8 +40,8 @@ from PyQt5.QtWidgets import (qApp,
 
 from appdata import ApplicationData
 from database import Database
+from fmt import human_bytes
 from mongo import Books
-from fmt import HumanBytes
 
 LIBRARY = os.path.expanduser("~/Library")
 COLLECTIONS = ("Documents", "PROC", "Books", "Papers", "Slides")
@@ -414,7 +414,7 @@ class BookSearch(QWidget):
             # applocale = KGlobal.locale()
             # size = applocale.formatByteSize(st.st_size, 1)
             # time = applocale.formatDateTime(datetime.fromtimestamp(st.st_mtime))
-            size = HumanBytes(st.st_size)
+            size = human_bytes(st.st_size)
             time = QDateTime(datetime.fromtimestamp(st.st_mtime)).toString()
             self.view.setToolTip("<br/>".join((size, time)))
 

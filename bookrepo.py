@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 
-import mimetypes
 import os
-# import scandir
 import sys
+import mimetypes
 from collections import Counter
 
 from fileitem import FileItem
@@ -15,7 +14,9 @@ class BookRepo:
     def __init__(self, db_dir, book_dirs):
         self.db_dir = db_dir
         self.book_dirs = book_dirs
-        self.clear_summary()
+        self.count = None
+        self.sumcount = None
+        self.total = None
         mimetypes.init()
 
     def clear_summary(self):
@@ -49,11 +50,11 @@ class BookRepo:
             yield from self._find_in(directory)
 
     def _find_in(self, directory):
-        """Iterator that yelds every book in the given directory, recursing
+        """Iterator that yields every book in the given directory, recursing
            over subdirectories.
         """
 
-        dirpath = os.path.join(self.db_dir, directory)
+        path = os.path.join(self.db_dir, directory)
         print(f"    Scanning {directory}")
         if directory not in self.count:
             self.count[directory] = 0
@@ -62,35 +63,35 @@ class BookRepo:
             # Scan all entries in directory. Files are yielded as FileItems,
             # directories are added to a list to be scanned later.
             subdirs = []
-            for direntry in os.scandir(dirpath):
-                if direntry.is_dir():
-                    subdirs.append(direntry.name)
+            for dirent in os.scandir(path):
+                if dirent.is_dir():
+                    subdirs.append(dirent.name)
                     continue
-                if not direntry.is_file():
+                if not dirent.is_file():
                     continue
 
                 # Determine the file type and encoding, and using that split
                 # the filename into a file part and an "extension".
-                filename = direntry.name
+                filename = dirent.name
                 filetype = ""
                 mimetype, encoding = mimetypes.guess_type(filename, False)
                 if mimetype:
-                    exts = mimetypes.guess_all_extensions(mimetype, False)
+                    extensions = mimetypes.guess_all_extensions(mimetype, False)
                     if encoding == "gzip":
-                        exts = [ext + ".gz" for ext in exts]
-                    for ext in exts:
+                        extensions = [ext + ".gz" for ext in extensions]
+                    for ext in extensions:
                         if filename.endswith(ext):
                             filename = filename[:-len(ext)]
                             filetype = ext[1:]
-                            break;
+                            break
 
                 self.count[directory] += 1
                 yield FileItem(dir=directory,
                                file=filename,
                                type=filetype,
-                               size=direntry.stat().st_size,
-                               mtime=direntry.stat().st_mtime,
-                               entry=direntry)
+                               size=dirent.stat().st_size,
+                               mtime=dirent.stat().st_mtime,
+                               entry=dirent)
 
             # All regular files have been processed.
             #
