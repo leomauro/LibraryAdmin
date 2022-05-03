@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 import locale
 import os
@@ -8,35 +7,41 @@ import sys
 from collections import defaultdict
 from datetime import datetime
 
-from PyQt5.QtCore import (Qt,
-                          pyqtSlot,
-                          QDateTime,
-                          QMimeData,
-                          QModelIndex,
-                          QPoint,
-                          QRegExp,
-                          QSettings,
-                          QSize,
-                          QSortFilterProxyModel,
-                          QUrl)
-from PyQt5.QtGui import (QCloseEvent,
-                         QDrag,
-                         QIcon,
-                         QStandardItem,
-                         QStandardItemModel)
-from PyQt5.QtWidgets import (qApp,
-                             QAction,
-                             QApplication,
-                             QCheckBox,
-                             QFrame,
-                             QGridLayout,
-                             QHeaderView,
-                             QLabel,
-                             QLineEdit,
-                             QMainWindow,
-                             QRadioButton,
-                             QTreeView,
-                             QWidget)
+from PyQt5.QtCore import (
+    pyqtSlot,
+    QDateTime,
+    QMimeData,
+    QModelIndex,
+    QPoint,
+    QRegExp,
+    QSettings,
+    QSize,
+    QSortFilterProxyModel,
+    Qt,
+    QUrl
+)
+from PyQt5.QtGui import (
+    QCloseEvent,
+    QDrag,
+    QIcon,
+    QStandardItem,
+    QStandardItemModel
+)
+from PyQt5.QtWidgets import (
+    QAction,
+    QApplication,
+    QCheckBox,
+    QFrame,
+    QGridLayout,
+    QHeaderView,
+    QLabel,
+    QLineEdit,
+    QMainWindow,
+    QRadioButton,
+    QTreeView,
+    QWidget,
+    qApp
+)
 
 from appdata import ApplicationData
 from database import Database
@@ -141,11 +146,11 @@ class BookSearch(QWidget):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.setStyleSheet("font-size: 9.5;")
+        self.setStyleSheet("font-size: 11;")
 
         # We have no cached Book Database or Book model (yet) ...
-        self._book_db = None
-        self._mongo_db = None
+        self.book_db = None
+        self.mongo_db = None
         self.model = None
 
         # ... and our item-type subset selection is empty, defaulting to False
@@ -168,28 +173,11 @@ class BookSearch(QWidget):
         # itemEntered().
         self.lastItem = None
 
-        # Create the search widget's UI, which includes the viewer widget.
-        self.setupUI()
-
-        # Set up a proxy to filter and sort our model. This way we don't have
-        # to modify the underlying Book model, which is usually loaded just
-        # once, initially, but that can be forced to be reloaded if we want to
-        # recompute the Book Database.
-        self.proxyModel = BookFilterProxyModel()
-        self.view.setModel(self.proxyModel)
-
-        # We're done!
         #
-        # Start a short timer to delay a little bit the initial database and
-        # model loading. This is done in order to avoid "freezing" the UI when
-        # we start the program and the model simultaneously tries to load and
-        # display.
-        self.timerId = self.startTimer(500)
-
-    def setupUI(self):
-        """ Set up the UI by hand.
-            (GUI builders create such a convoluted and complex mess... Sigh!)
-        """
+        # Here we create the search widget's UI, which includes the viewer widget.
+        # We do this by hand, because GUI builders create such a convoluted and
+        # complex mess... Sigh!
+        #
 
         # The grid layout we'll use to assemble the whole composite widget.
         grid = QGridLayout(self)
@@ -208,13 +196,13 @@ class BookSearch(QWidget):
 
         # The type-of-search controls.
         # Any changes restart the redisplay timer.
-        self.syntax_strng = QRadioButton(self.tr("&Substring"))
-        self.syntax_strng.setStatusTip(self.tr("Search for a substring"))
-        self.syntax_strng.setChecked(True)
-        self.syntax_strng.toggled.connect(self.timer)
+        self.syntax_string = QRadioButton(self.tr("&Substring"))
+        self.syntax_string.setStatusTip(self.tr("Search for a substring"))
+        self.syntax_string.setChecked(True)
+        self.syntax_string.toggled.connect(self.timer)
         self.syntax_words = QRadioButton(self.tr("&Words"))
         self.syntax_words.setStatusTip(self.tr("Search for individual words"))
-        self.syntax_words.setDisabled(True)  # For the time being
+        self.syntax_words.setDisabled(True)                 # For the time being
         self.syntax_words.toggled.connect(self.timer)
         self.syntax_RegEx = QRadioButton(self.tr("&Regular Expression"))
         self.syntax_RegEx.setStatusTip(self.tr("Search for Regular Expression"))
@@ -228,7 +216,7 @@ class BookSearch(QWidget):
         self.syntax_INonA.setStatusTip(self.tr("Search ignores non-alphanumerics"))
         self.syntax_INonA.toggled.connect(self.timer)
 
-        grid.addWidget(self.syntax_strng, 0, 3)
+        grid.addWidget(self.syntax_string, 0, 3)
         grid.addWidget(self.syntax_words, 1, 3)
         grid.addWidget(self.syntax_RegEx, 2, 3)
         grid.addWidget(self.syntax_ICase, 3, 3)
@@ -240,20 +228,41 @@ class BookSearch(QWidget):
 
         grid.addWidget(self.statistics, 1, 1, 4, 1)
 
-        # Now we create the viewer for the Book model. It responds to
-        # double-clicks and mouse entering/leaving an item. See itemCalled()
-        # and itemEntered() respectively.
+        #
+        # Here we create the viewer for the Book model. It responds to a
+        # double click and to mouse entering/leaving an item.
+        # See itemCalled() and itemEntered() respectively.
+        #
         self.view = BookView()
         self.view.doubleClicked.connect(self.itemCalled)
         self.view.entered.connect(self.itemEntered)
 
         grid.addWidget(self.view, 5, 0, -1, -1)
 
+        #
+        # Here Set up a proxy to filter and sort our model. This way we don't
+        # have to modify the underlying Book model, which is usually loaded
+        # just once, initially, but that can be forced to be reloaded if we
+        # want to recompute the Book Database.
+        self.proxyModel = BookFilterProxyModel()
+        self.view.setModel(self.proxyModel)
+
+        # We're done!
+        #
+        # Start a short timer to delay a bit the initial database and model
+        # loading. This is done in order to avoid "freezing" the UI when we
+        # start the program and the model simultaneously tries to load and
+        # display.
+        #
+
+        self.timerId = self.startTimer(500)
+
     def db(self):
         """Return the Book Database, loading and caching it the first time."""
-        if self._book_db is None:
-            self._book_db = Database(LIBRARY, COLLECTIONS)
-        return self._book_db
+
+        if self.book_db is None:
+            self.book_db = Database(LIBRARY, COLLECTIONS)
+        return self.book_db
 
     def display(self, reload=False):
         """Display the (filtered) model."""
@@ -265,7 +274,7 @@ class BookSearch(QWidget):
         if self.syntax_RegEx.isChecked():
             syntax = BookFilterProxyModel.SyntaxRE
         ignore_case = self.syntax_ICase.isChecked()
-        only_alnum = self.syntax_INonA.isChecked()
+        only_alphanum = self.syntax_INonA.isChecked()
 
         # Obtain and normalize the search text.
         search_text = self.find.text().strip()
@@ -279,7 +288,7 @@ class BookSearch(QWidget):
                 search_text == self.currSearch and \
                 syntax == self.currSyntax and \
                 ignore_case == self.currCase and \
-                only_alnum == self.currAlNum and \
+                only_alphanum == self.currAlNum and \
                 self.selection == self.currSelection:
             return
 
@@ -288,12 +297,12 @@ class BookSearch(QWidget):
         # Put up a Wait Cursor.
         QApplication.setOverrideCursor(Qt.WaitCursor)
 
-        # Remember the filtering parameters so we can detect changes at a later
-        # time.
+        # Remember the filtering parameters, so we can detect changes
+        # at a later time.
         self.currSearch = search_text
         self.currSyntax = syntax
         self.currCase = ignore_case
-        self.currAlNum = only_alnum
+        self.currAlNum = only_alphanum
         self.currSelection = self.selection.copy()
 
         # Load the model if we don't have one yet or we've been asked to
@@ -324,10 +333,10 @@ class BookSearch(QWidget):
         lines.append(line)
 
         # Convenience function
-        def fmt_summary(item, cnt):
-            return "{}: {:n} ({:.2%})".format(self.tr(item),
-                                              cnt,
-                                              cnt / model_count)
+        def fmt_summary(item_name, item_count):
+            return "{}: {:n} ({:.2%})".format(self.tr(item_name),
+                                              item_count,
+                                              item_count / model_count)
 
         line = []
         self.db().summary()
@@ -369,7 +378,7 @@ class BookSearch(QWidget):
         else:
             self.model.clear()
 
-        # Setup the model's header labels. The Model Viewer will detect clicks
+        # Set up the model's header labels. The Model Viewer will detect clicks
         # on these labels and sort the (proxy) model for us.
         self.model.setHorizontalHeaderLabels([self.tr("Type"),
                                               self.tr("Where"),
@@ -385,7 +394,7 @@ class BookSearch(QWidget):
         # will apply any filtering we have programmed into it.
         self.proxyModel.setSourceModel(self.model)
 
-        # Finally, we reset the view so it displays the newly loaded model (via
+        # Finally, we reset the view, so it displays the newly loaded model (via
         # the proxy).
         self.view.reload()
 
@@ -433,9 +442,9 @@ class BookSearch(QWidget):
            The Book Database is caused to be rebuilt. We do that by removing it
            and then forcing the model to be re-displayed.
         """
-        if self._book_db is not None:
-            self._book_db.remove()
-            self._book_db = None
+        if self.book_db is not None:
+            self.book_db.remove()
+            self.book_db = None
         self.display(reload=True)
 
     @pyqtSlot()
@@ -447,10 +456,10 @@ class BookSearch(QWidget):
 
            @TODO Unify this under only one database (most probably MONGO...)
         """
-        if self._mongo_db is None:
-            self._mongo_db = Books(LIBRARY, COLLECTIONS)
-            self._mongo_db.checknew()
-            self._mongo_db.cleanup()
+        if self.mongo_db is None:
+            self.mongo_db = Books(LIBRARY, COLLECTIONS)
+            self.mongo_db.checknew()
+            self.mongo_db.cleanup()
         self.reload()
 
     @pyqtSlot()
@@ -462,7 +471,7 @@ class BookSearch(QWidget):
         """
         self.find.clear()
         self.find.setFocus()
-        self.syntax_strng.setChecked(True)
+        self.syntax_string.setChecked(True)
         self.syntax_ICase.setChecked(True)
         self.syntax_INonA.setChecked(False)
         self.timer()
@@ -487,6 +496,7 @@ class BookSearch(QWidget):
 
     def timerEvent(self, event):
         """The redisplay timer has been triggered, redisplay the model."""
+
         self.killTimer(event.timerId())
         self.timerId = None
         self.display()
@@ -495,15 +505,15 @@ class BookSearch(QWidget):
 class MainWindow(QMainWindow):
     """The application's main window."""
 
-    def __init__(self, appData: ApplicationData, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, appdata: ApplicationData, parent=None, *args, **kwargs):
+        super().__init__(parent, *args, **kwargs)
 
         self.setWindowTitle(self.tr("Library Administrator"))
 
         # Restore application's window to last saved state.
-        self.appData = appData
-        self.settings = QSettings(self.appData.company,
-                                  self.appData.application)
+        self.appdata = appdata
+        self.settings = QSettings(self.appdata.company,
+                                  self.appdata.application)
 
         win_geometry = self.settings.value('geometry')
         if win_geometry is not None:
@@ -514,7 +524,7 @@ class MainWindow(QMainWindow):
             self.restoreState(win_state)
 
         # Instantiate the search widget as the window's "central widget", which
-        # is the area left after the menu bar, tool bar and status bar has been
+        # is the area left after the menu bar, toolbar and status bar has been
         # allocated.
         self.search = BookSearch()
         self.setCentralWidget(self.search)
@@ -567,6 +577,12 @@ class MainWindow(QMainWindow):
                                   'view-refresh',
                                   'Shift+F5',
                                   slot=self.search.rescan))
+
+        # Settings menu.
+        app_settings = self.menuBar().addMenu(self.tr('&App Settings'))
+        app_settings.addAction(mkaction('Adjust &Fonts',
+                                        'Adjust Application Fonts',
+                                        'current-fonts'))
 
         # Help menu.
         help = self.menuBar().addMenu(self.tr('&Help'))
@@ -633,7 +649,7 @@ class MainWindow(QMainWindow):
 
            Ensure saving app state before exiting.
         """
-        settings = QSettings(self.appData.company, self.appData.application)
+        settings = QSettings(self.appdata.company, self.appdata.application)
         settings.setValue("geometry", self.saveGeometry())
         settings.setValue("windowState", self.saveState())
         super().closeEvent(event)
@@ -643,9 +659,9 @@ def main():
     locale.setlocale(locale.LC_ALL, '')
 
     appdir = os.path.split(sys.argv[0])[0]
-    print(f"{appdir=}")
+#   print(f"{appdir=}")
 
-    appData = ApplicationData(
+    appdata = ApplicationData(
             name="Leopoldo Mauro",
             mail="lmauro@usb.ve",
             company="Universidad Simón Bolívar",
@@ -671,9 +687,9 @@ def main():
     #    KCmdLineArgs.init(sys.argv, aboutData)
 
     app = QApplication(sys.argv)
-    app.setWindowIcon(QIcon(appData.icon))
+    app.setWindowIcon(QIcon(appdata.icon))
 
-    win = MainWindow(appData)
+    win = MainWindow(appdata)
     win.show()
     return app.exec()
 

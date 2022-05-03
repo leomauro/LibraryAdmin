@@ -62,8 +62,11 @@ class BookRepo:
         try:
             # Scan all entries in directory. Files are yielded as FileItems,
             # directories are added to a list to be scanned later.
+            # Additionally, .directory files (if present) are ignored.
             subdirs = []
             for dirent in os.scandir(path):
+                if dirent.name == ".directory":
+                    continue
                 if dirent.is_dir():
                     subdirs.append(dirent.name)
                     continue

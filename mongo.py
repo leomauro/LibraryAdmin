@@ -6,7 +6,6 @@ import os
 import sys
 
 from pymongo import MongoClient, ASCENDING
-
 from bookrepo import BookRepo
 
 
