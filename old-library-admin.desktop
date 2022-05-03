@@ -1,0 +1,19 @@
+[Desktop Entry]
+Comment[en_US]=Administer Library Database
+Comment=Administer Library Database
+GenericName[en_US]=Administer Library Database
+GenericName=Administer Library Database
+Exec=/home/leomauro/Work/Workspaces/Pycharm/LibraryAdmin/main.py
+Icon=/usr/share/icons/oxygen/base/64x64/apps/acroread.png
+MimeType=
+Name[en_US]=Library Admin
+Name=Library Admin
+Path=/home/leomauro
+StartupNotify=true
+Terminal=false
+TerminalOptions=
+Type=Application
+X-DBUS-ServiceName=
+X-DBUS-StartupType=none
+X-KDE-SubstituteUID=false
+X-KDE-Username=
