@@ -1,5 +1,4 @@
 PyQt5~=5.12.3
 pymongo~=4.0.2
 sqlalchemy~=1.4.32
-numpy~=1.19.5
 requests~=2.27.1
